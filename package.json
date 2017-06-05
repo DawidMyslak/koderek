@@ -1,0 +1,16 @@
+{
+  "name": "koderek",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Dawid Myslak",
+  "license": "ISC",
+  "dependencies": {
+    "monaco-editor": "^0.8.3",
+    "pixi.js": "^4.5.2",
+    "requirejs": "^2.3.3"
+  }
+}

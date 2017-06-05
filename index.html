@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+	<style>
+		html,
+		body {
+			height: 100%;
+			margin: 0;
+			background-color: #272d37;
+		}
+
+		.container {
+			width: 1200px;
+			margin: 0 auto;
+		}
+
+		.column {
+			width: 600px;
+			float: left;
+		}
+
+		.navigation {
+			font-family: Menlo, Monaco, "Courier New", monospace;
+			background-color: #e91e63;
+			border: none;
+			color: #fff;
+			margin: 5px 5px 0 0;
+			padding: 10px 20px;
+			font-size: 12px;
+			display: block;
+			float: left;
+		}
+
+		.navigation:disabled {
+			background-color: #888;
+		}
+
+		.loading {
+			font-family: Menlo, Monaco, "Courier New", monospace;
+			text-align: center;
+			color: #fff;
+			padding-top: 280px;
+			height: 320px;
+			font-size: 20px;
+		}
+
+		.canvas,
+		.editor {
+			height: 600px;
+		}
+	</style>
+	<script src="node_modules/requirejs/require.js"></script>
+</head>
+
+<body>
+	<div class="container">
+		<div id="loading" class="loading">Loading...</div>
+		<div id="app">
+			<div class="column">
+				<div id="canvas" class="canvas"></div>
+				<button id="run" class="navigation">run</button>
+				<button id="stop" class="navigation">stop</button>
+			</div>
+			<div class="column">
+				<div id="editor" class="editor"></div>
+			</div>
+		</div>
+	</div>
+	<script>
+		document.getElementById('app').style.display = 'none';
+		document.getElementById('stop').disabled = true;
+
+		require.config({
+			paths: {
+				'vs': 'node_modules/monaco-editor/min/vs',
+				'pixi': 'node_modules/pixi.js/dist'
+			}
+		});
+		require(['vs/editor/editor.main', 'pixi/pixi.min'], init);
+
+		function init() {
+			document.getElementById('loading').style.display = 'none';
+			document.getElementById('app').style.display = 'block';
+
+			/* Monaco Editor setup */
+
+			var editor = monacoEditorWrapper(monaco, document.getElementById('editor'));
+
+			/* Pixi.js setup */
+
+			var game = pixiWrapper(window, PIXI, document.getElementById('canvas'));
+			game.init();
+
+			/* Fancy magic with listeners */
+
+			document.getElementById('run').addEventListener('click', function () {
+				document.getElementById('run').disabled = true;
+				document.getElementById('stop').disabled = false;
+
+				var script = document.createElement('script');
+				script.innerHTML = editor.getValue();
+				document.getElementsByTagName('body')[0].appendChild(script);
+				script.remove();
+			});
+
+			document.getElementById('stop').addEventListener('click', function () {
+				document.getElementById('run').disabled = false;
+				document.getElementById('stop').disabled = true;
+
+				game.destroy();
+				game.init();
+			});
+		}
+
+		function pixiWrapper(global, PIXI, element) {
+			var app;
+
+			return {
+				init: function () {
+					app = new PIXI.Application(600, 600, { backgroundColor: 0x1099bb });
+					element.appendChild(app.view);
+
+					var bunny = PIXI.Sprite.fromImage('bunny.png');
+					global.bunny = bunny; // expose bunny!
+
+					bunny.anchor.set(0.5);
+					bunny.x = app.renderer.width / 2;
+					bunny.y = app.renderer.height / 2;
+					bunny.isRotating = false;
+					app.stage.addChild(bunny);
+
+					app.ticker.add(function (delta) {
+						if (bunny.isRotating) {
+							bunny.rotation += 0.1 * delta;
+						}
+					});
+				},
+				destroy: function () {
+					app.destroy();
+					element.getElementsByTagName('canvas')[0].remove();
+				}
+			};
+		}
+
+		function monacoEditorWrapper(monaco, element) {
+			return monaco.editor.create(element, {
+				value: [
+					'function rotateBunny() {',
+					'\tbunny.isRotating = true;',
+					'}',
+					'',
+					'function stopBunny() {',
+					'\tbunny.isRotating = false;',
+					'}',
+					'',
+					'rotateBunny();',
+					'setTimeout(stopBunny, 5000);'
+				].join('\n'),
+				language: 'javascript'
+				// quickSuggestions: false,
+				// contextmenu: false
+			});
+		}
+	</script>
+</body>
+
+</html>
