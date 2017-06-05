@@ -85,14 +85,13 @@
 			document.getElementById('loading').style.display = 'none';
 			document.getElementById('app').style.display = 'block';
 
-			/* Monaco Editor setup */
-
-			var editor = monacoEditorWrapper(monaco, document.getElementById('editor'));
-
 			/* Pixi.js setup */
 
 			var game = pixiWrapper(window, PIXI, document.getElementById('canvas'));
-			game.init();
+
+			/* Monaco Editor setup */
+
+			var editor = monacoEditorWrapper(monaco, document.getElementById('editor'));
 
 			/* Fancy magic with listeners */
 
@@ -110,38 +109,42 @@
 				document.getElementById('run').disabled = false;
 				document.getElementById('stop').disabled = true;
 
-				game.destroy();
-				game.init();
+				game.reset();
 			});
 		}
 
+		/* Real magic */
+
 		function pixiWrapper(global, PIXI, element) {
-			var app;
+			var app = new PIXI.Application(600, 600, { backgroundColor: 0x1099bb });
+			element.appendChild(app.view);
+
+			// global bunny exposed for editor
+			global.bunny = {};
+
+			// local closure bunny
+			var bunny = PIXI.Sprite.fromImage('bunny.png');
+
+			bunny.anchor.set(0.5);
+			bunny.x = app.renderer.width / 2;
+			bunny.y = app.renderer.height / 2;
+			app.stage.addChild(bunny);
+			app.ticker.add(function (delta) {
+				if (global.bunny.isRotating) {
+					bunny.rotation += 0.1 * delta;
+				}
+			});
+
+			var reset = function () {
+				global.bunny = {};
+				global.bunny.isRotating = false;
+				bunny.rotation = 0;
+			};
+
+			reset();
 
 			return {
-				init: function () {
-					app = new PIXI.Application(600, 600, { backgroundColor: 0x1099bb });
-					element.appendChild(app.view);
-
-					var bunny = PIXI.Sprite.fromImage('bunny.png');
-					global.bunny = bunny; // expose bunny!
-
-					bunny.anchor.set(0.5);
-					bunny.x = app.renderer.width / 2;
-					bunny.y = app.renderer.height / 2;
-					bunny.isRotating = false;
-					app.stage.addChild(bunny);
-
-					app.ticker.add(function (delta) {
-						if (bunny.isRotating) {
-							bunny.rotation += 0.1 * delta;
-						}
-					});
-				},
-				destroy: function () {
-					app.destroy();
-					element.getElementsByTagName('canvas')[0].remove();
-				}
+				reset: reset
 			};
 		}
 
@@ -157,7 +160,7 @@
 					'}',
 					'',
 					'rotateBunny();',
-					'setTimeout(stopBunny, 5000);'
+					'setTimeout(stopBunny, 500);'
 				].join('\n'),
 				language: 'javascript'
 				// quickSuggestions: false,
